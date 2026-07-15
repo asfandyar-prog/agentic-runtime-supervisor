@@ -1,6 +1,7 @@
 """Aggregate run summaries into RESULTS.md: one head-to-head table + the ablation
 table + RQ readouts + the full disclosure list. Generated, not hand-edited."""
 import json
+import os
 
 HEADLINE = ["static_raw", "never_tta", "always_tta", "monitor_fixed", "bandit", "supervisor"]
 ABLATIONS = ["supervisor_no_drift", "supervisor_no_setsize", "supervisor_no_benefit",
@@ -52,6 +53,44 @@ def generate(summary_path: str = "runs/summary.json", out_path: str = "RESULTS.m
     best_static = max(statics, key=lambda s: s["net_benefit"])
     sig_abls = [S[m] for m in ("supervisor_no_drift", "supervisor_no_setsize", "supervisor_no_benefit")]
     best_abl = max(sig_abls, key=lambda s: s["net_benefit"])
+
+    # RQ2 robustness subsection, rendered only if the multiseed run has been executed
+    # (results/multiseed_rq2.json is the committed aggregate; memory.md D28)
+    ms_md = ""
+    ms_path = "results/multiseed_rq2.json"
+    if os.path.exists(ms_path):
+        with open(ms_path, encoding="utf-8") as f:
+            ms = json.load(f)
+        rows = "\n".join(
+            f"| {r['seed']} | {r['supervisor_net']:+.4f} | {r['bandit_net']:+.4f} | {r['delta']:+.4f} |"
+            for r in ms["per_seed"])
+        d = ms["delta"]
+        n_pos, n = d["n_positive"], ms["n_seeds"]
+        if n_pos == n:
+            sign_txt = "the supervisor is ahead on every seed"
+        elif n_pos == 0:
+            sign_txt = "the bandit is ahead on every seed"
+        else:
+            sign_txt = f"the sign of Δ flips across seeds ({n_pos}/{n} favor the supervisor)"
+        overlap = abs(ms["supervisor"]["mean"] - ms["bandit"]["mean"]) < (
+            ms["supervisor"]["std"] + ms["bandit"]["std"])
+        tie_txt = ("the tie holds: the two distributions overlap" if overlap
+                   else "the distributions separate — the tie does NOT hold")
+        ms_md = f"""
+### RQ2 robustness ({n} seeds)
+
+Per seed, only the stream realization and the policy RNGs vary ({ms['varied']});
+held fixed: {ms['held_fixed']}. Supervisor and bandit only — the static baselines need
+no seed spread. Traces per seed in `results/seedN/`.
+
+| Seed | Supervisor net | Bandit net | Δ (sup − bandit) |
+|---|---|---|---|
+{rows}
+| **mean ± std** | **{ms['supervisor']['mean']:+.4f} ± {ms['supervisor']['std']:.4f}** | **{ms['bandit']['mean']:+.4f} ± {ms['bandit']['std']:.4f}** | **{d['mean']:+.4f} ± {d['std']:.4f}** |
+
+Across {n} seeds, {tie_txt} (supervisor {ms['supervisor']['mean']:+.4f} ± {ms['supervisor']['std']:.4f} vs bandit
+{ms['bandit']['mean']:+.4f} ± {ms['bandit']['std']:.4f}), and {sign_txt}.
+"""
 
     def verdict(a, b, what):
         d = a["net_benefit"] - b["net_benefit"]
@@ -133,6 +172,7 @@ reward surface) nets {sup['net_benefit']:.4f} vs bandit {band['net_benefit']:.4f
 The VoI-bonus run ("{LABELS['supervisor_bonus']}", net {S['supervisor_bonus']['net_benefit']:.4f},
 {S['supervisor_bonus']['n_escalate']} escalations vs {sup['n_escalate']} without) is reported here as its own
 finding, deliberately outside RQ2 (memory.md D17).
+{ms_md}
 
 **RQ3 (does adapt-then-recalibrate preserve coverage under TTA?):** always-TTA with
 recalibration covers {_fmt(S['always_tta']['coverage'], pct=True)} vs {_fmt(S['always_tta_norecal']['coverage'], pct=True)} without,

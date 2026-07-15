@@ -86,6 +86,25 @@ The VoI-bonus run ("Supervisor + escalation VoI bonus (not RQ2)", net -0.0074,
 5 escalations vs 5 without) is reported here as its own
 finding, deliberately outside RQ2 (memory.md D17).
 
+### RQ2 robustness (5 seeds)
+
+Per seed, only the stream realization and the policy RNGs vary (stream realization (corruption schedule, batch draws, monitoring subset) + policy RNGs);
+held fixed: trained ViT, temperature, calibration split, q_hat, drift reference, ECE floor. Supervisor and bandit only — the static baselines need
+no seed spread. Traces per seed in `results/seedN/`.
+
+| Seed | Supervisor net | Bandit net | Δ (sup − bandit) |
+|---|---|---|---|
+| 0 | -0.0074 | -0.0064 | -0.0011 |
+| 1 | -0.0097 | -0.0122 | +0.0025 |
+| 2 | -0.0065 | -0.0039 | -0.0026 |
+| 3 | -0.0104 | -0.0075 | -0.0029 |
+| 4 | -0.0112 | -0.0087 | -0.0025 |
+| **mean ± std** | **-0.0091 ± 0.0020** | **-0.0077 ± 0.0031** | **-0.0013 ± 0.0022** |
+
+Across 5 seeds, the tie holds: the two distributions overlap (supervisor -0.0091 ± 0.0020 vs bandit
+-0.0077 ± 0.0031), and the sign of Δ flips across seeds (1/5 favor the supervisor).
+
+
 **RQ3 (does adapt-then-recalibrate preserve coverage under TTA?):** always-TTA with
 recalibration covers 89.2% vs 89.0% without,
 against the 95% target (corrupted-only: 86.8% vs 86.5%).

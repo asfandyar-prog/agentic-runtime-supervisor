@@ -1,0 +1,100 @@
+{
+ "n_seeds": 5,
+ "held_fixed": "trained ViT, temperature, calibration split, q_hat, drift reference, ECE floor",
+ "varied": "stream realization (corruption schedule, batch draws, monitoring subset) + policy RNGs",
+ "per_seed": [
+  {
+   "seed": 0,
+   "supervisor_net": -0.0074209836675639615,
+   "bandit_net": -0.00635751824663617,
+   "delta": -0.0010634654209277913,
+   "supervisor_actions": {
+    "n_tta": 32,
+    "n_escalate": 5,
+    "n_abstain": 2
+   },
+   "bandit_actions": {
+    "n_tta": 3,
+    "n_escalate": 7,
+    "n_abstain": 3
+   }
+  },
+  {
+   "seed": 1,
+   "supervisor_net": -0.009749424744432028,
+   "bandit_net": -0.012222914887337066,
+   "delta": 0.0024734901429050386,
+   "supervisor_actions": {
+    "n_tta": 23,
+    "n_escalate": 7,
+    "n_abstain": 6
+   },
+   "bandit_actions": {
+    "n_tta": 40,
+    "n_escalate": 4,
+    "n_abstain": 16
+   }
+  },
+  {
+   "seed": 2,
+   "supervisor_net": -0.006523395212981651,
+   "bandit_net": -0.0039031866053946315,
+   "delta": -0.0026202086075870195,
+   "supervisor_actions": {
+    "n_tta": 7,
+    "n_escalate": 8,
+    "n_abstain": 4
+   },
+   "bandit_actions": {
+    "n_tta": 8,
+    "n_escalate": 3,
+    "n_abstain": 5
+   }
+  },
+  {
+   "seed": 3,
+   "supervisor_net": -0.010385635559180359,
+   "bandit_net": -0.007506297028975497,
+   "delta": -0.002879338530204862,
+   "supervisor_actions": {
+    "n_tta": 4,
+    "n_escalate": 3,
+    "n_abstain": 81
+   },
+   "bandit_actions": {
+    "n_tta": 18,
+    "n_escalate": 4,
+    "n_abstain": 47
+   }
+  },
+  {
+   "seed": 4,
+   "supervisor_net": -0.011223108382925612,
+   "bandit_net": -0.00868917803985639,
+   "delta": -0.0025339303430692225,
+   "supervisor_actions": {
+    "n_tta": 18,
+    "n_escalate": 9,
+    "n_abstain": 12
+   },
+   "bandit_actions": {
+    "n_tta": 18,
+    "n_escalate": 4,
+    "n_abstain": 23
+   }
+  }
+ ],
+ "supervisor": {
+  "mean": -0.009060509513416722,
+  "std": 0.0020020234186803685
+ },
+ "bandit": {
+  "mean": -0.007735818961639951,
+  "std": 0.0030693805293217497
+ },
+ "delta": {
+  "mean": -0.0013246905517767713,
+  "std": 0.002238971493847487,
+  "n_positive": 1
+ }
+}

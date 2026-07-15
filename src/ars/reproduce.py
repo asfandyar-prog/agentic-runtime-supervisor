@@ -20,7 +20,8 @@ from .runner import gated_feedback, precompute, run_method
 from .signals import fit_drift_reference
 
 
-def run_supervisor(name, records, model, cal_x, cal_y, qhat_frozen, ref, seed_offset, **flags):
+def run_supervisor(name, records, model, cal_x, cal_y, qhat_frozen, ref, seed_offset,
+                   runs_dir=CFG.runs_dir, **flags):
     policy = SupervisorPolicy(np.random.default_rng(CFG.seed + seed_offset), **flags)
     by_id = {r.batch.batch_id: r for r in records}
     ctx = GraphContext(
@@ -40,7 +41,7 @@ def run_supervisor(name, records, model, cal_x, cal_y, qhat_frozen, ref, seed_of
                                "reasoning": out["reasoning"], "memory": out["memory"]}
 
     # learner=None: gated feedback is consumed INSIDE the graph's OutcomeLogging node
-    return run_method(name, records, decide, qhat_frozen)
+    return run_method(name, records, decide, qhat_frozen, runs_dir=runs_dir)
 
 
 def main():

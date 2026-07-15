@@ -1,0 +1,38 @@
+{
+ "summaries": [
+  {
+   "method": "supervisor",
+   "n_batches": 200,
+   "accuracy_issued": 0.7237338362068966,
+   "ece_issued": 0.022588014426435342,
+   "coverage": 0.9430226293103449,
+   "mean_set_size": 2.177532327586207,
+   "n_tta": 4,
+   "n_escalate": 3,
+   "n_abstain": 81,
+   "abstention_rate": 0.405,
+   "mean_cost": 0.02694999999999997,
+   "mean_benefit": 0.01656436444081961,
+   "net_benefit": -0.010385635559180359
+  },
+  {
+   "method": "bandit",
+   "n_batches": 200,
+   "accuracy_issued": 0.6731333892617449,
+   "ece_issued": 0.03435795070552034,
+   "coverage": 0.9275377516778524,
+   "mean_set_size": 2.3435402684563758,
+   "n_tta": 18,
+   "n_escalate": 4,
+   "n_abstain": 47,
+   "abstention_rate": 0.235,
+   "mean_cost": 0.01890000000000001,
+   "mean_benefit": 0.011393702971024513,
+   "net_benefit": -0.007506297028975497
+  }
+ ],
+ "meta": {
+  "seed": 3,
+  "note": "multiseed RQ2 run: stream + policy RNG vary; classifier/calibration fixed at base config"
+ }
+}
