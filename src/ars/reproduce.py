@@ -3,6 +3,7 @@ ablations -> RESULTS.md.   Usage: uv run ars-reproduce
 """
 import json
 import os
+import shutil
 
 import numpy as np
 import torch
@@ -145,6 +146,14 @@ def main():
 
     print("== phase 6: report ==")
     report.generate()
+
+    # per-experiment archive (D27): committed, inspectable decision traces -- runs/ is
+    # gitignored scratch, results/ is the preserved record of the submitted experiment
+    dst = os.path.join("results", f"seed{CFG.seed}")
+    os.makedirs(dst, exist_ok=True)
+    for fn in os.listdir(CFG.runs_dir):
+        shutil.copy2(os.path.join(CFG.runs_dir, fn), os.path.join(dst, fn))
+    print(f"archived runs/ -> {dst}/")
 
 
 if __name__ == "__main__":

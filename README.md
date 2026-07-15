@@ -60,6 +60,9 @@ fixed-threshold monitor, memoryless contextual bandit, supervisor) plus ablation
 decision traces to `runs/*.jsonl`, and generates [RESULTS.md](RESULTS.md).
 
 Everything is seeded (seed 0); the whole pipeline is CPU-only and finishes in minutes.
+Each run archives its decision traces (one JSONL per method + summary.json) to the
+committed `results/seed<seed>/` folder, so the submitted experiment's per-batch decisions
+are inspectable without re-running.
 
 ## What the comparison shows
 

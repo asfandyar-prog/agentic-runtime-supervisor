@@ -72,7 +72,36 @@ Monitor tuned on the eval stream to `{meta['monitor_rule']}`.
 
 Primary metric: **net calibration benefit** = mean realized ECE-reduction benefit − mean
 intervention cost (design.md §4; identical formula for every method, computed with full labels
-by the evaluation harness — the *policies* only ever saw gated labels).
+by the evaluation harness — the *policies* only ever saw gated labels). Decision traces for
+this run are archived in `results/seed{meta['seed']}/` (one JSONL per method + summary.json), committed
+and inspectable without re-running.
+
+## Headline findings
+
+1. **TTA worsens calibration under shift here.** Pooled issued ECE {S['always_tta']['ece_issued']:.4f} with
+   always-TTA vs {S['never_tta']['ece_issued']:.4f} without (net {S['always_tta']['net_benefit']:+.4f} after costs). Entropy minimization
+   sharpens confidence, which under the exposé's calibration-not-accuracy objective makes
+   blanket adaptation net-harmful; the supervisor's learned behavior is accordingly
+   *restraint*, and blind-intervention policies lose 4–8× more than the learners' small
+   exploration overhead.
+2. **RQ2 is a tie — the pre-committed, reportable negative result.** Supervisor
+   {sup['net_benefit']:+.4f} vs memoryless bandit {band['net_benefit']:+.4f} (|Δ| = {abs(sup['net_benefit'] - band['net_benefit']):.4f}, inside the 0.005 single-seed noise
+   band). Bucketed outcome memory did not beat a stationary linear reward surface in this
+   episodic-TTA setting — consistent with the exposé's own caution that episodic
+   reversion mutes the non-stationarity argument for the agentic controller.
+
+## Correction during development (RQ1 attribution)
+
+An earlier configuration of this PoC showed the supervisor beating all static baselines
+(+0.0496 vs +0.0028 for the then-monitor; Run A, 2026-07-15). That advantage was traced —
+by attribution across three runs, not conjecture — to two artifacts: (a) the small-sample
+ECE noise floor (≈0.11 at batch size 64) was being credited to the ABSTAIN/ESCALATE
+benefit, paying every policy for withholding well-calibrated batches; and (b) the
+fixed-threshold monitor was denied the ABSTAIN action — the very action the artifact made
+profitable. Both were corrected (temperature scaling, floor-debiased withhold benefit,
+full-vocabulary monitor grid; memory.md D22–D26, author-reviewed and approved), and the
+apparent supervisor advantage disappeared. The corrected numbers are reported: a
+comparison that survives its own artifact audit is worth more than a win that does not.
 
 ## Head-to-head comparison (the single table)
 
@@ -148,6 +177,11 @@ TTA regime (thesis scope) is where recalibration should matter.
 8. Stream reuses test images across batches; batch-level ECE on 64 samples is noisy
    (policies learn from a noisy but honest outcome signal; table ECE is pooled).
 9. Batch-level actions; per-sample selective prediction is future work.
+10. **Milder shift than the motivating case (D25).** Under these corruptions the tiny ViT
+   fails with LOW confidence (entropy rises; corrupted batch-level ECE ≈ 0.13–0.16), not
+   the thesis's confidently-wrong regime (shift ECE 0.889). The silent-failure setting
+   that most motivates runtime supervision is under-represented in this stream;
+   confidently-wrong shifts are thesis-scale work.
 """
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(md)
