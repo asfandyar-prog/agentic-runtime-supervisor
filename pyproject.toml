@@ -1,0 +1,22 @@
+[project]
+name = "agentic-runtime-supervisor"
+version = "0.1.0"
+description = "PoC: agentic runtime supervision for a deployed medical vision model under distribution shift"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "torch>=2.4",
+    "torchvision>=0.19",
+    "medmnist>=3.0",
+    "langgraph>=0.2",
+    "numpy>=1.26",
+]
+
+[project.scripts]
+ars-reproduce = "ars.reproduce:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ars"]
