@@ -46,6 +46,34 @@ class TinyViT(nn.Module):
         return self.head(self.forward_features(x))
 
 
+class TemperatureScaled(nn.Module):
+    """The deployed model = frozen ViT + temperature fitted on the calibration set.
+    Standard deployment practice, and the expose's premise is a well-calibrated deployed
+    model (clean ECE 0.014 in the thesis work); without it the tiny ViT's clean ECE
+    (~0.10) exceeds the abstention cost and every policy degenerates to always-abstain
+    (memory.md D22)."""
+
+    def __init__(self, inner: nn.Module, temperature: float):
+        super().__init__()
+        self.inner = inner
+        self.temperature = temperature
+
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        return self.inner.forward_features(x)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.inner(x) / self.temperature
+
+
+def fit_temperature(model: nn.Module, x: torch.Tensor, y: torch.Tensor) -> float:
+    """1-D NLL grid search on the clean calibration set (labels legitimately available)."""
+    with torch.no_grad():
+        logits = model(x)
+    grid = torch.logspace(-0.7, 0.7, 141)
+    nll = [nn.functional.cross_entropy(logits / t, y).item() for t in grid]
+    return float(grid[int(torch.tensor(nll).argmin())])
+
+
 def load_frozen(path: str = CFG.checkpoint_path) -> TinyViT:
     model = TinyViT()
     model.load_state_dict(torch.load(path, weights_only=True))

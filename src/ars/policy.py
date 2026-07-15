@@ -17,8 +17,9 @@ WHY this design, point by point (defended to reviewers):
 
 * Benefit definitions (design.md #4): ACCEPT = 0 (it IS the do-nothing reference);
   TTA = ECE_frozen - ECE_adapted, signable, because TTA can make a fine model worse
-  and the policy must be able to learn that; ABSTAIN = ESCALATE = ECE_frozen
-  (miscalibration avoided by not shipping predictions).
+  and the policy must be able to learn that; ABSTAIN = ESCALATE = ECE_frozen minus the
+  clean batch-ECE noise floor (miscalibration avoided by not shipping predictions,
+  debiased so withholding is not paid for small-sample estimator bias -- D24).
 
 * Because ABSTAIN and ESCALATE share a benefit, the cheaper ABSTAIN always weakly
   dominates -- so deliberate escalation only exists via the VoI bonus

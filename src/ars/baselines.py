@@ -27,29 +27,38 @@ def always_tta_decider(rec: BatchRecord):
     return "TTA", {}
 
 
-def tune_monitor(records: list[BatchRecord]) -> tuple[float, float, float]:
-    """Grid-search (tau_tta, tau_esc) on the evaluation stream, maximizing the same
-    net-benefit metric the table reports. Oracle-tuned by design; disclosed."""
+def tune_monitor(records: list[BatchRecord]) -> tuple[float, float, str, str, float]:
+    """Grid-search a static drift-threshold rule on the evaluation stream, maximizing the
+    same net-benefit metric the table reports. Oracle-tuned by design; disclosed.
+    The grid picks thresholds (tau1 <= tau2) AND the mid/high actions from the full
+    intervention vocabulary {TTA, ABSTAIN, ESCALATE} -- otherwise the monitor is denied
+    the action that may win and stops being an upper bound for static policies
+    (memory.md D23). Low region is always ACCEPT; inf thresholds allow one-threshold
+    and never-intervene variants, so the expose's single-threshold monitor is inside
+    the search space."""
     drifts = np.array([r.drift for r in records])
     cands = list(np.unique(np.quantile(drifts, np.linspace(0.05, 0.95, 19)))) + [np.inf]
-    best = (np.inf, np.inf, -np.inf)
+    interventions = ("TTA", "ABSTAIN", "ESCALATE")
+    best = (np.inf, np.inf, "TTA", "ESCALATE", -np.inf)
     for t1 in cands:
         for t2 in cands:
             if t2 < t1:
                 continue
-            net = 0.0
-            for r in records:
-                a = "ACCEPT" if r.drift <= t1 else ("TTA" if r.drift <= t2 else "ESCALATE")
-                net += benefit(a, r) - CFG.cost[a]
-            if net / len(records) > best[2]:
-                best = (float(t1), float(t2), net / len(records))
+            for mid in interventions:
+                for high in interventions:
+                    net = 0.0
+                    for r in records:
+                        a = "ACCEPT" if r.drift <= t1 else (mid if r.drift <= t2 else high)
+                        net += benefit(a, r) - CFG.cost[a]
+                    if net / len(records) > best[4]:
+                        best = (float(t1), float(t2), mid, high, net / len(records))
     return best
 
 
-def monitor_decider(tau_tta: float, tau_esc: float):
+def monitor_decider(tau1: float, tau2: float, mid: str, high: str):
     def decide(rec: BatchRecord):
-        a = "ACCEPT" if rec.drift <= tau_tta else ("TTA" if rec.drift <= tau_esc else "ESCALATE")
-        return a, {"tau_tta": round(tau_tta, 4), "tau_esc": round(tau_esc, 4)}
+        a = "ACCEPT" if rec.drift <= tau1 else (mid if rec.drift <= tau2 else high)
+        return a, {"rule": f"ACCEPT<={tau1:.3f}<{mid}<={tau2:.3f}<{high}"}
     return decide
 
 

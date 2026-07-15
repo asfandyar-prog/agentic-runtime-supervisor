@@ -50,19 +50,23 @@ def corrupt(x: torch.Tensor, name: str, severity: int, gen: torch.Generator) -> 
     s = severity
     if name == "clean":
         return x
+    # severities tuned once on a 500-image probe so shift actually damages calibration
+    # (noise sev2 halves accuracy; jitter sev2 triples ECE); blur is deliberately kept
+    # benign -- it moves embeddings without hurting calibration, giving drift-threshold
+    # rules a false-positive regime (memory.md D25)
     if name == "gaussian_noise":
-        sigma = [0.05, 0.10, 0.20][s - 1]
+        sigma = [0.15, 0.25, 0.40][s - 1]
         noise = torch.randn(x.shape, generator=gen) * sigma
         return (x + noise).clamp(0.0, 1.0)
     if name == "gaussian_blur":
-        sigma = [0.5, 1.0, 1.8][s - 1]
+        sigma = [0.8, 1.5, 2.5][s - 1]
         return TF.gaussian_blur(x, kernel_size=5, sigma=sigma)
     if name == "color_jitter":
         # deterministic per severity (no random sampling): shift brightness/contrast/sat/hue
-        x = TF.adjust_brightness(x, 1.0 + 0.20 * s)
-        x = TF.adjust_contrast(x, 1.0 - 0.15 * s)
-        x = TF.adjust_saturation(x, 1.0 + 0.30 * s)
-        return TF.adjust_hue(x, 0.03 * s)
+        x = TF.adjust_brightness(x, 1.0 + 0.30 * s)
+        x = TF.adjust_contrast(x, 1.0 - 0.22 * s)
+        x = TF.adjust_saturation(x, 1.0 + 0.50 * s)
+        return TF.adjust_hue(x, 0.05 * s)
     raise ValueError(name)
 
 

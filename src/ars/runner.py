@@ -39,20 +39,26 @@ class BatchRecord:
     probs_adapted: np.ndarray     # episodic TTA outcome (deterministic)
     qhat_adapted: float           # adapt-then-recalibrate threshold
     ece_adapted: float
+    ece_floor: float              # clean batch-ECE noise floor, measured a priori (D24)
 
 
 def benefit(action: str, rec: BatchRecord) -> float:
     """Realized ECE-reduction benefit (design.md #4). ACCEPT is the do-nothing
-    reference; ABSTAIN/ESCALATE avoid shipping the frozen model's miscalibration."""
+    reference. TTA is a same-batch DIFFERENCE, so the small-sample ECE bias largely
+    cancels. ABSTAIN/ESCALATE avoid shipping the frozen model's miscalibration, but
+    batch ECE on 64 samples is biased upward even for a calibrated model (~0.11
+    measured), which would pay withholding for estimator bias rather than avoided
+    miscalibration -- so the clean floor, measured a priori on the calibration set,
+    is subtracted (signable: keeps the estimate unbiased; memory.md D24)."""
     if action == "ACCEPT":
         return 0.0
     if action == "TTA":
         return rec.ece_frozen - rec.ece_adapted
-    return rec.ece_frozen  # ABSTAIN / ESCALATE
+    return rec.ece_frozen - rec.ece_floor  # ABSTAIN / ESCALATE
 
 
 def precompute(model, stream: list[StreamBatch], cal_x, cal_y, qhat_frozen: float,
-               ref: DriftReference) -> list[BatchRecord]:
+               ref: DriftReference, ece_floor: float) -> list[BatchRecord]:
     records = []
     ln_before = torch.cat([p.detach().flatten() for p in _ln_params(model)]).clone()
     for sb in stream:
@@ -72,6 +78,7 @@ def precompute(model, stream: list[StreamBatch], cal_x, cal_y, qhat_frozen: floa
             mean_set_size=float(sizes.mean()), inflated=ref.setsize_inflated(float(sizes.mean())),
             probs_frozen=probs_f, ece_frozen=ece(probs_f, y),
             probs_adapted=probs_a, qhat_adapted=qhat_a, ece_adapted=ece(probs_a, y),
+            ece_floor=ece_floor,
         ))
     return records
 
@@ -103,7 +110,7 @@ def run_method(name: str, records: list[BatchRecord], decider, qhat_frozen: floa
     n_act = {a: 0 for a in ACTIONS}
     total_cost = total_benefit = 0.0
 
-    with open(trace_path, "w") as f:
+    with open(trace_path, "w", encoding="utf-8") as f:
         for rec in records:
             action, extra = decider(rec)
             n_act[action] += 1

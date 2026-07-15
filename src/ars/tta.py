@@ -12,8 +12,10 @@ The calibration set is clean while the batch is shifted, so exchangeability is N
 restored -- flagged simplification, measured by RQ3, not a fix.
 
 Adaptation is deterministic given (frozen weights, batch): entropy minimization has no
-random sampling. This is what makes counterfactual replay and the precompute cache
-exactly equivalent to a live run (memory.md D19).
+random sampling; repeated calls in the same context are bit-identical. Across contexts,
+CPU kernel-path selection introduces ~1e-6 noise (parameters stay bit-identical), so the
+precompute cache is equivalent to a live run within float tolerance -- asserted in
+graph.Action (memory.md D19, D26).
 """
 import numpy as np
 import torch

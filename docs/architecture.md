@@ -76,6 +76,8 @@ agentic-runtime-supervisor/
 | val | 1,003 | 500 → **clean calibration set** (conformal scores AND drift reference — same set, per spec); 503 unused spare |
 | test | 2,005 | **stream pool**: ~200 batches × 64, images drawn with reuse, corruption applied per batch |
 
+The **deployed model** is the trained ViT plus temperature scaling fitted by NLL on the calibration set (standard deployment practice; restores the exposé's well-calibrated premise — memory.md D22). "Frozen classifier" below means ViT weights + fixed T.
+
 Stream schedule (seeded): blocks of 10 batches share a regime drawn from {clean (~40% of blocks), (corruption ∈ {gaussian noise, gaussian blur, color jitter}) × severity ∈ {1,2,3}}. Block structure makes drift temporally correlated — realistic, and gives history-based policies something to exploit (disclosed in design.md §10). Every 10th batch is a **monitoring batch**: its labels are revealed to the policy *after* the action executes.
 
 ## 4. LangGraph node graph

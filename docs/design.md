@@ -42,9 +42,9 @@ Condition for each being optimal (given the benefit definitions in §4): ACCEPT 
 | Action | Realized benefit |
 |---|---|
 | ACCEPT | 0 by definition (it *is* the do-nothing reference) |
-| TTA | `ECE_frozen − ECE_adapted` (can be negative: TTA can make a well-behaved model worse — that is the point of supervising it) |
-| ABSTAIN | `ECE_frozen` (miscalibration avoided by not shipping) |
-| ESCALATE | `ECE_frozen` (same avoidance; the human handles the batch) |
+| TTA | `ECE_frozen − ECE_adapted` (can be negative: TTA can make a well-behaved model worse — that is the point of supervising it; same-batch difference, so small-sample ECE bias largely cancels) |
+| ABSTAIN | `ECE_frozen − floor` (miscalibration avoided by not shipping, **debiased**: `floor` = clean batch-ECE noise floor measured a priori on the calibration set — see §10.8/D24) |
+| ESCALATE | `ECE_frozen − floor` (same avoidance; the human handles the batch) |
 
 Fixed costs (ECE units): `ACCEPT 0.00, TTA 0.02, ABSTAIN 0.06, ESCALATE 0.15`. Only the *ordering* (free < cheap compute < lost throughput < human time) carries the argument; magnitudes are disclosed knobs, sensitivity analysis out of scope.
 
@@ -104,7 +104,7 @@ Update path: OutcomeLogging node, only when labels arrived, per §6. Nothing els
 - **Static, no intervention:** raw frozen classifier, no conformal machinery. Accuracy/ECE only; coverage n/a; zero cost.
 - **Never-TTA:** conformal-wrapped frozen classifier, always ACCEPT. Isolates the value of conformal wrapping.
 - **Always-TTA:** TTA + adapt-then-recalibrate on every batch. Also run once **without** recalibration → the RQ3 coverage contrast.
-- **Fixed-threshold monitor:** drift thresholds (τ_tta, τ_esc): accept below τ_tta, TTA in between, escalate above τ_esc. Both thresholds grid-searched on the **evaluation stream itself** and the best net-benefit pair reported — an oracle-tuned upper bound for static policies. Disclosed: this deliberately favors the baseline, making RQ1 *harder* for the supervisor.
+- **Fixed-threshold monitor:** drift thresholds (τ1 ≤ τ2): ACCEPT below τ1; between τ1/τ2 and above τ2, one intervention each, with the grid choosing those two actions from {TTA, ABSTAIN, ESCALATE} as well as the thresholds (∞ thresholds keep the exposé's single-threshold monitor inside the search space). Grid-searched on the **evaluation stream itself**, best net-benefit rule reported — an oracle-tuned upper bound for static policies. Without the action choice the monitor is denied the action that may win and stops being an upper bound (memory.md D23). Disclosed: this deliberately favors the baseline, making RQ1 *harder* for the supervisor.
 - **Signal ablations (RQ1),** supervisor variants: (a) **no-drift** — single bucket, estimator unconditioned on shift; (b) **no-set-size** — ACCEPT gate removed; (c) **no-benefit/cost** — memory off; fixed mapping b0→ACCEPT, b1→TTA, b2→ESCALATE (+gate), i.e., the policy collapses to a two-signal threshold monitor, which is precisely the exposé's point about what removing the outcome loop leaves behind. RQ1's ablation claim is tested against the *strongest* single-signal variant.
 - **(d) Escalation-bonus ON (additional finding, not RQ2):** the headline supervisor re-run with the VoI bonus enabled (design.md §5). Reported alongside — never inside — the RQ2 comparison, as "VoI-driven escalation changes X."
 
@@ -116,3 +116,5 @@ Update path: OutcomeLogging node, only when labels arrived, per §6. Nothing els
 4. Block-structured (temporally correlated) drift is realistic but favors memoryful policies; disclosed.
 5. Counterfactual replay (§6) and escalation bonus (§5) are PoC additions beyond the exposé's literal policy — both review-approved. The bonus is OFF in the headline and reported as its own ablation (§9d); replay's scope limit is stated in §6.
 6. Stream reuses test images across batches to reach ~200 batches.
+7. The deployed model is the frozen ViT **plus temperature scaling fitted on the calibration set** (standard deployment practice; restores the exposé's well-calibrated-deployment premise — without it the tiny ViT's clean ECE (~0.10) exceeds the abstention cost and every policy degenerates to always-abstain; memory.md D22).
+8. Per-batch ECE on 64 samples has an upward small-sample bias (measured clean floor ≈0.11 even for the temperature-scaled model whose pooled clean ECE is ≈0.02); left uncorrected it pays withholding for estimator bias rather than avoided miscalibration, and every policy degenerates to always-abstain. The withhold benefit therefore subtracts the floor (measured a priori on the calibration set — §4). The floor is an approximation under shift (bias depends on the confidence distribution); disclosed, with an always-abstain reference number in RESULTS.md. Post-approval deviation, flagged: memory.md D24.
