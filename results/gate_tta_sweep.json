@@ -1,0 +1,243 @@
+{
+ "n_batches_per_cell": 16,
+ "batch_size": 64,
+ "temperature": 1.0715192556381226,
+ "bucket_edges": [
+  0.17158163545622684,
+  0.5147449063686805
+ ],
+ "rows": [
+  {
+   "corruption": "clean",
+   "strength": 0.0,
+   "n": 1024,
+   "acc_before": 0.73046875,
+   "acc_after": 0.7353515625,
+   "ece_before": 0.027505206623229476,
+   "ece_after": 0.021954035170187923,
+   "drift": 0.13256052387538392,
+   "bucket": 0
+  },
+  {
+   "corruption": "gaussian_noise",
+   "strength": 0.02,
+   "n": 1024,
+   "acc_before": 0.7138671875,
+   "acc_after": 0.720703125,
+   "ece_before": 0.019592012891196386,
+   "ece_after": 0.023261782016247727,
+   "drift": 0.12032426882942747,
+   "bucket": 0
+  },
+  {
+   "corruption": "gaussian_noise",
+   "strength": 0.05,
+   "n": 1024,
+   "acc_before": 0.69140625,
+   "acc_after": 0.705078125,
+   "ece_before": 0.0376441209827956,
+   "ece_after": 0.0531332867644121,
+   "drift": 0.19467034538665315,
+   "bucket": 1
+  },
+  {
+   "corruption": "gaussian_noise",
+   "strength": 0.08,
+   "n": 1024,
+   "acc_before": 0.650390625,
+   "acc_after": 0.6708984375,
+   "ece_before": 0.042996793217466744,
+   "ece_after": 0.04102841632086209,
+   "drift": 0.3031402793998984,
+   "bucket": 1
+  },
+  {
+   "corruption": "gaussian_noise",
+   "strength": 0.12,
+   "n": 1024,
+   "acc_before": 0.5791015625,
+   "acc_after": 0.5947265625,
+   "ece_before": 0.07793401045669675,
+   "ece_after": 0.08411361514504502,
+   "drift": 0.4868156801972189,
+   "bucket": 1
+  },
+  {
+   "corruption": "gaussian_noise",
+   "strength": 0.15,
+   "n": 1024,
+   "acc_before": 0.546875,
+   "acc_after": 0.572265625,
+   "ece_before": 0.0918811376395671,
+   "ece_after": 0.07667934553263199,
+   "drift": 0.569811366174952,
+   "bucket": 2
+  },
+  {
+   "corruption": "gaussian_noise",
+   "strength": 0.25,
+   "n": 1024,
+   "acc_before": 0.4814453125,
+   "acc_after": 0.5087890625,
+   "ece_before": 0.0915498665271683,
+   "ece_after": 0.08355284757116112,
+   "drift": 0.7149532650033694,
+   "bucket": 2
+  },
+  {
+   "corruption": "gaussian_noise",
+   "strength": 0.4,
+   "n": 1024,
+   "acc_before": 0.61328125,
+   "acc_after": 0.6318359375,
+   "ece_before": 0.09154314208702083,
+   "ece_after": 0.09801754170969236,
+   "drift": 0.7733312879308061,
+   "bucket": 2
+  },
+  {
+   "corruption": "gaussian_blur",
+   "strength": 0.3,
+   "n": 1024,
+   "acc_before": 0.7119140625,
+   "acc_after": 0.724609375,
+   "ece_before": 0.04272212577116357,
+   "ece_after": 0.03378866284577938,
+   "drift": 0.13154659718935086,
+   "bucket": 0
+  },
+  {
+   "corruption": "gaussian_blur",
+   "strength": 0.5,
+   "n": 1024,
+   "acc_before": 0.7041015625,
+   "acc_after": 0.705078125,
+   "ece_before": 0.05057189821898347,
+   "ece_after": 0.052645069121617184,
+   "drift": 0.1316960476443323,
+   "bucket": 0
+  },
+  {
+   "corruption": "gaussian_blur",
+   "strength": 0.8,
+   "n": 1024,
+   "acc_before": 0.7529296875,
+   "acc_after": 0.759765625,
+   "ece_before": 0.026361690103371537,
+   "ece_after": 0.021380070494022532,
+   "drift": 0.1472172112645694,
+   "bucket": 0
+  },
+  {
+   "corruption": "gaussian_blur",
+   "strength": 1.2,
+   "n": 1024,
+   "acc_before": 0.744140625,
+   "acc_after": 0.748046875,
+   "ece_before": 0.021984799684558798,
+   "ece_after": 0.02622226490908756,
+   "drift": 0.16009087748559178,
+   "bucket": 0
+  },
+  {
+   "corruption": "gaussian_blur",
+   "strength": 1.5,
+   "n": 1024,
+   "acc_before": 0.7099609375,
+   "acc_after": 0.7138671875,
+   "ece_before": 0.03644455743492501,
+   "ece_after": 0.03515029243661842,
+   "drift": 0.19536549905490916,
+   "bucket": 1
+  },
+  {
+   "corruption": "gaussian_blur",
+   "strength": 2.0,
+   "n": 1024,
+   "acc_before": 0.705078125,
+   "acc_after": 0.708984375,
+   "ece_before": 0.037395107117614845,
+   "ece_after": 0.03741880648738858,
+   "drift": 0.20977938498491397,
+   "bucket": 1
+  },
+  {
+   "corruption": "gaussian_blur",
+   "strength": 2.5,
+   "n": 1024,
+   "acc_before": 0.71875,
+   "acc_after": 0.728515625,
+   "ece_before": 0.03213390079913256,
+   "ece_after": 0.04879506552329371,
+   "drift": 0.2117342646956611,
+   "bucket": 1
+  },
+  {
+   "corruption": "color_jitter",
+   "strength": 0.25,
+   "n": 1024,
+   "acc_before": 0.7236328125,
+   "acc_after": 0.728515625,
+   "ece_before": 0.03639919634059891,
+   "ece_after": 0.03197408387769194,
+   "drift": 0.19051568833300775,
+   "bucket": 1
+  },
+  {
+   "corruption": "color_jitter",
+   "strength": 0.5,
+   "n": 1024,
+   "acc_before": 0.6943359375,
+   "acc_after": 0.6962890625,
+   "ece_before": 0.05256431834776867,
+   "ece_after": 0.06308177033493655,
+   "drift": 0.28948483332657743,
+   "bucket": 1
+  },
+  {
+   "corruption": "color_jitter",
+   "strength": 1.0,
+   "n": 1024,
+   "acc_before": 0.658203125,
+   "acc_after": 0.6611328125,
+   "ece_before": 0.13137749145949787,
+   "ece_after": 0.14614589934922342,
+   "drift": 0.5208300025272655,
+   "bucket": 2
+  },
+  {
+   "corruption": "color_jitter",
+   "strength": 1.5,
+   "n": 1024,
+   "acc_before": 0.6787109375,
+   "acc_after": 0.681640625,
+   "ece_before": 0.1569889459726129,
+   "ece_after": 0.17421450330811708,
+   "drift": 0.8542415578938,
+   "bucket": 2
+  },
+  {
+   "corruption": "color_jitter",
+   "strength": 2.0,
+   "n": 1024,
+   "acc_before": 0.6865234375,
+   "acc_after": 0.6884765625,
+   "ece_before": 0.14373948780702195,
+   "ece_after": 0.16654562412559987,
+   "drift": 1.1919743186252099,
+   "bucket": 2
+  },
+  {
+   "corruption": "color_jitter",
+   "strength": 3.0,
+   "n": 1024,
+   "acc_before": 0.658203125,
+   "acc_after": 0.65625,
+   "ece_before": 0.10028902998053534,
+   "ece_after": 0.1424689923848956,
+   "drift": 1.5224940874510444,
+   "bucket": 2
+  }
+ ],
+ "note": "Day-1 gate sweep (D29): measurement only; committed config untouched"
+}
