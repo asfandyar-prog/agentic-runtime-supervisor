@@ -1,0 +1,31 @@
+{
+ "derived_from": "results/seed0 archived traces (no re-runs; committed costs untouched)",
+ "committed_costs": {
+  "ACCEPT": 0.0,
+  "TTA": 0.02,
+  "ABSTAIN": 0.06,
+  "ESCALATE": 0.15
+ },
+ "supervisor_exploration_overhead": 0.0074,
+ "tta": {
+  "stream_mean_benefit": -0.0062815,
+  "by_bucket": {
+   "b0": 0.003109090909090909,
+   "b1": -0.00420566037735849,
+   "b2": -0.013091304347826085
+  },
+  "crossover_cost": 0.003109090909090909,
+  "gate_best_case_ece_benefit": 0.015201792106935105
+ },
+ "withhold": {
+  "stream_mean_benefit": 0.014298183307554542,
+  "by_bucket": {
+   "b0": -0.008971816692445459,
+   "b1": 0.005544409722648879,
+   "b2": 0.033252531133641496
+  },
+  "crossover_cost_stream": 0.014298183307554542,
+  "crossover_cost_best_bucket": 0.033252531133641496
+ },
+ "note": "Crossovers are oracle-estimate upper bounds: the cost below which the action's mean realized benefit (committed definition) is positive; a learning supervisor additionally pays ~0.007 exploration overhead."
+}

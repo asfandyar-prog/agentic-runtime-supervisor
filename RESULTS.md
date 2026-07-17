@@ -78,6 +78,7 @@ net metric correctly prices as the worst policy.
 "Static classifier (no conformal, no intervention)" (net 0.0000); the supervisor does NOT beat the best static baseline (-0.0074) — a legitimate negative result per the exposé.
 Signal ablation: strongest reduced variant is "Supervisor, ablate drift signal"
 (net -0.0075); the supervisor and its strongest single-signal reduction are within noise of each other (+0.0001) — a null result, reportable as such.
+Across the same 5 seeds as the RQ2 robustness run, the no-benefit/cost ablation nets -0.0496 ± 0.0094; removing the outcome loop costs +0.0405 ± 0.0088 net vs the full supervisor — the single-seed figure holds across seeds.
 
 **RQ2 (memory vs memoryless, the headline test):** supervisor (escalation bonus OFF,
 so the only difference under test is bucketed outcome memory vs a stationary linear
@@ -113,6 +114,41 @@ exchangeability fix. Context: 3-step LayerNorm-only adaptation barely moves the 
 function, so recalibration has little to correct here; the coverage gap to target is
 driven by the shift itself (clean coverage 95.5% → corrupted ~87%). A stronger/continual
 TTA regime (thesis scope) is where recalibration should matter.
+
+## Cost-sensitivity (crossover values, derived from archived traces)
+
+Computed analytically from the committed Run C per-batch benefits (no policy re-runs;
+committed costs untouched). A crossover is the cost below which an intervention's mean
+realized benefit (committed definition) turns positive — an oracle-estimate upper bound;
+a learning supervisor additionally pays its measured ≈0.0074 exploration overhead.
+
+- **TTA** (committed cost 0.02): stream-mean benefit -0.0063; per bucket: b0 +0.0031, b1 -0.0042, b2 -0.0131.
+  A positive crossover exists only at cost ≈ 0.0031, and only in the least-shifted bucket — where intervention is least needed. Notably, even the gate sweep's best-case TTA ECE benefit
+  (+0.0152, noise-only cells) sits just **below** the committed 0.02 cost — that
+  proximity is itself part of the finding: TTA is priced almost exactly at the margin of
+  its best measurable calibration value here.
+- **ABSTAIN/ESCALATE** (committed costs 0.06/0.15): withhold benefit crosses positive at
+  cost ≈ 0.0143 stream-wide, and ≈ 0.0333 in the most-shifted bucket
+  (per bucket: b0 -0.0090, b1 +0.0055, b2 +0.0333). Below ≈ 0.0259 (best bucket minus exploration
+  overhead) a bucket-aware supervisor should overtake the never-intervene static baseline;
+  at the committed 0.06 it necessarily trails it by roughly the exploration overhead.
+
+## TTA-recovery gate: the two-regime extension was not built (a finding, not a failure)
+
+A gated Day-1 sweep (20 corruption×strength cells × 16×64 held-out samples,
+before/after episodic TTA, paired; full table in `results/gate_tta_sweep.json`) asked
+whether TTA yields real accuracy recovery in some mild band. Result: **TTA produces
+genuine accuracy recovery under gaussian-noise shift** (best cells: gaussian_noise s=0.25: +2.7pt accuracy, ΔECE -0.0080, drift bucket b2; gaussian_noise s=0.15: +2.5pt accuracy, ΔECE -0.0152, drift bucket b2; gaussian_noise s=0.08: +2.1pt accuracy, ΔECE -0.0020, drift bucket b1), growing
+with severity and absent for blur/jitter — **but the calibration-based benefit metric is
+structurally blind to it**: TTA's best-case ECE improvement (+0.0152) is below the
+committed TTA cost (0.02), so a calibration-driven supervisor *correctly declines an
+intervention that would have improved accuracy*. No mild-severity recovery band exists
+(recovery is noise-only and severity-increasing), so the planned mild-vs-severe regime
+contrast has no substrate on this model, and per the pre-committed gate it was not built.
+This is a conceptual finding about **benefit-metric choice in runtime supervision** — how
+intervention benefit should be defined when calibration- and accuracy-value diverge is a
+thesis-level question (the exposé's benefit definition is deliberately calibration-only,
+and redefining it post hoc would be result-shopping).
 
 ## Limitations and disclosures (design.md §10)
 

@@ -1,0 +1,68 @@
+{
+ "n_seeds": 5,
+ "per_seed": [
+  {
+   "seed": 0,
+   "no_benefit_net": -0.060121058142320584,
+   "supervisor_net": -0.0074209836675639615,
+   "removal_cost": 0.05270007447475662,
+   "actions": {
+    "n_tta": 53,
+    "n_escalate": 92,
+    "n_abstain": 0
+   }
+  },
+  {
+   "seed": 1,
+   "no_benefit_net": -0.04936068148735444,
+   "supervisor_net": -0.009749424744432028,
+   "removal_cost": 0.03961125674292241,
+   "actions": {
+    "n_tta": 14,
+    "n_escalate": 82,
+    "n_abstain": 0
+   }
+  },
+  {
+   "seed": 2,
+   "no_benefit_net": -0.03502593389491336,
+   "supervisor_net": -0.006523395212981651,
+   "removal_cost": 0.02850253868193171,
+   "actions": {
+    "n_tta": 42,
+    "n_escalate": 54,
+    "n_abstain": 0
+   }
+  },
+  {
+   "seed": 3,
+   "no_benefit_net": -0.04857066850969193,
+   "supervisor_net": -0.010385635559180359,
+   "removal_cost": 0.03818503295051157,
+   "actions": {
+    "n_tta": 53,
+    "n_escalate": 85,
+    "n_abstain": 0
+   }
+  },
+  {
+   "seed": 4,
+   "no_benefit_net": -0.05473724926985204,
+   "supervisor_net": -0.011223108382925612,
+   "removal_cost": 0.04351414088692643,
+   "actions": {
+    "n_tta": 30,
+    "n_escalate": 93,
+    "n_abstain": 0
+   }
+  }
+ ],
+ "no_benefit": {
+  "mean": -0.049563118260826475,
+  "std": 0.009362123058955875
+ },
+ "removal_cost": {
+  "mean": 0.040502608747409755,
+  "std": 0.008775175832195578
+ }
+}

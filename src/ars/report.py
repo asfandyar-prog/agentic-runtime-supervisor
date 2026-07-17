@@ -92,6 +92,76 @@ Across {n} seeds, {tie_txt} (supervisor {ms['supervisor']['mean']:+.4f} ± {ms['
 {ms['bandit']['mean']:+.4f} ± {ms['bandit']['std']:.4f}), and {sign_txt}.
 """
 
+    # multi-seed no-benefit ablation (Day 3a, D30), rendered only if executed
+    abl_ms = ""
+    if os.path.exists("results/multiseed_no_benefit.json"):
+        with open("results/multiseed_no_benefit.json", encoding="utf-8") as f:
+            ab = json.load(f)
+        abl_ms = (f"\nAcross the same {ab['n_seeds']} seeds as the RQ2 robustness run, the no-benefit/cost "
+                  f"ablation nets {ab['no_benefit']['mean']:+.4f} ± {ab['no_benefit']['std']:.4f}; removing the outcome loop costs "
+                  f"{ab['removal_cost']['mean']:+.4f} ± {ab['removal_cost']['std']:.4f} net vs the full supervisor — the single-seed "
+                  f"figure holds across seeds.")
+
+    # cost-sensitivity crossovers (Day 3b, D30), rendered only if executed
+    cost_md = ""
+    if os.path.exists("results/cost_sensitivity.json"):
+        with open("results/cost_sensitivity.json", encoding="utf-8") as f:
+            cs = json.load(f)
+        t, w = cs["tta"], cs["withhold"]
+        fb = lambda d: ", ".join(f"{k} {v:+.4f}" for k, v in d.items())
+        tta_cross = ("No positive-cost crossover exists on this stream (mean TTA benefit is ≤ 0 in every "
+                     "drift bucket)" if t["crossover_cost"] is None
+                     else f"A positive crossover exists only at cost ≈ {t['crossover_cost']:.4f}, and only in the "
+                          f"least-shifted bucket — where intervention is least needed")
+        cost_md = f"""
+## Cost-sensitivity (crossover values, derived from archived traces)
+
+Computed analytically from the committed Run C per-batch benefits (no policy re-runs;
+committed costs untouched). A crossover is the cost below which an intervention's mean
+realized benefit (committed definition) turns positive — an oracle-estimate upper bound;
+a learning supervisor additionally pays its measured ≈{cs['supervisor_exploration_overhead']:.4f} exploration overhead.
+
+- **TTA** (committed cost 0.02): stream-mean benefit {t['stream_mean_benefit']:+.4f}; per bucket: {fb(t['by_bucket'])}.
+  {tta_cross}. Notably, even the gate sweep's best-case TTA ECE benefit
+  ({t['gate_best_case_ece_benefit']:+.4f}, noise-only cells) sits just **below** the committed 0.02 cost — that
+  proximity is itself part of the finding: TTA is priced almost exactly at the margin of
+  its best measurable calibration value here.
+- **ABSTAIN/ESCALATE** (committed costs 0.06/0.15): withhold benefit crosses positive at
+  cost ≈ {w['crossover_cost_stream']:.4f} stream-wide, and ≈ {w['crossover_cost_best_bucket']:.4f} in the most-shifted bucket
+  (per bucket: {fb(w['by_bucket'])}). Below ≈ {w['crossover_cost_best_bucket'] - cs['supervisor_exploration_overhead']:.4f} (best bucket minus exploration
+  overhead) a bucket-aware supervisor should overtake the never-intervene static baseline;
+  at the committed 0.06 it necessarily trails it by roughly the exploration overhead.
+"""
+
+    # TTA-recovery gate (Day 1, D29/D30), rendered only if the sweep was run
+    gate_md = ""
+    if os.path.exists("results/gate_tta_sweep.json"):
+        with open("results/gate_tta_sweep.json", encoding="utf-8") as f:
+            g = json.load(f)
+        rows_g = [r for r in g["rows"] if r["corruption"] != "clean"]
+        best3 = sorted(rows_g, key=lambda r: r["acc_after"] - r["acc_before"], reverse=True)[:3]
+        best_txt = "; ".join(
+            f"{r['corruption']} s={r['strength']}: {(r['acc_after'] - r['acc_before']) * 100:+.1f}pt accuracy, "
+            f"ΔECE {r['ece_after'] - r['ece_before']:+.4f}, drift bucket b{r['bucket']}" for r in best3)
+        gate_md = f"""
+## TTA-recovery gate: the two-regime extension was not built (a finding, not a failure)
+
+A gated Day-1 sweep ({len(rows_g)} corruption×strength cells × {g['n_batches_per_cell']}×{g['batch_size']} held-out samples,
+before/after episodic TTA, paired; full table in `results/gate_tta_sweep.json`) asked
+whether TTA yields real accuracy recovery in some mild band. Result: **TTA produces
+genuine accuracy recovery under gaussian-noise shift** (best cells: {best_txt}), growing
+with severity and absent for blur/jitter — **but the calibration-based benefit metric is
+structurally blind to it**: TTA's best-case ECE improvement (+{max(r['ece_before'] - r['ece_after'] for r in rows_g):.4f}) is below the
+committed TTA cost (0.02), so a calibration-driven supervisor *correctly declines an
+intervention that would have improved accuracy*. No mild-severity recovery band exists
+(recovery is noise-only and severity-increasing), so the planned mild-vs-severe regime
+contrast has no substrate on this model, and per the pre-committed gate it was not built.
+This is a conceptual finding about **benefit-metric choice in runtime supervision** — how
+intervention benefit should be defined when calibration- and accuracy-value diverge is a
+thesis-level question (the exposé's benefit definition is deliberately calibration-only,
+and redefining it post hoc would be result-shopping).
+"""
+
     def verdict(a, b, what):
         d = a["net_benefit"] - b["net_benefit"]
         if d > 0.005:
@@ -164,7 +234,7 @@ net metric correctly prices as the worst policy.
 **RQ1 (supervisor vs best-tuned static policy):** best static baseline is
 "{LABELS[best_static['method']]}" (net {best_static['net_benefit']:.4f}); {verdict(sup, best_static, 'the best static baseline')}
 Signal ablation: strongest reduced variant is "{LABELS[best_abl['method']]}"
-(net {best_abl['net_benefit']:.4f}); {verdict(sup, best_abl, 'its strongest single-signal reduction')}
+(net {best_abl['net_benefit']:.4f}); {verdict(sup, best_abl, 'its strongest single-signal reduction')}{abl_ms}
 
 **RQ2 (memory vs memoryless, the headline test):** supervisor (escalation bonus OFF,
 so the only difference under test is bucketed outcome memory vs a stationary linear
@@ -182,7 +252,7 @@ exchangeability fix. Context: 3-step LayerNorm-only adaptation barely moves the 
 function, so recalibration has little to correct here; the coverage gap to target is
 driven by the shift itself (clean coverage {meta['clean_coverage']:.1%} → corrupted ~{meta['rq3_corrupted_recal']:.0%}). A stronger/continual
 TTA regime (thesis scope) is where recalibration should matter.
-
+{cost_md}{gate_md}
 ## Limitations and disclosures (design.md §10)
 
 1. **Single seed ({meta['seed']}).** No variance estimate; differences within a few
