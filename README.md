@@ -1,98 +1,180 @@
 # agentic-runtime-supervisor
 
-Proof-of-concept for **agentic runtime supervision of a deployed medical vision model
-under distribution shift** (research exposé, ETH Agentic Systems Lab application).
+**When should a deployed medical AI intervene, once it may no longer be trustworthy?**
+Today that decision is a fixed threshold, set once at deployment. This proof-of-concept
+tests whether it should be a learned decision instead — and reports, honestly, what
+happened when we measured it.
 
-## Motivation
+Research exposé PoC, ETH Agentic Systems Lab application. DermaMNIST, one frozen ViT, a
+synthetic corruption stream. CPU-only, single command, fully archived.
 
-A deployed medical classifier facing input drift has four options per batch: trust the
-prediction, adapt at test time, abstain, or escalate to a human — and each is wrong most
-of the time. Blind trust ships confident errors (a ViT on DermaMNIST can stay *highly
-confident while systematically wrong* under shift); always-adapt wastes compute, can
-degrade a healthy model, and silently breaks conformal coverage; always-defer destroys
-throughput. Fixed thresholds can't weigh context, asymmetric costs, or what past
-interventions actually achieved.
+## The problem: confidently wrong
 
-This PoC puts a **runtime supervisor** in front of a frozen tiny ViT (temperature-scaled
-on its calibration set, per standard deployment practice; DermaMNIST, synthetic
-corruption stream). Per batch it reads three **label-free** signals — embedding
-drift vs a clean-calibration reference, conformal prediction set size, and
-expected-benefit-minus-cost — picks one of **ACCEPT / TTA / ABSTAIN / ESCALATE**, then
-updates a running per-action, per-drift-bucket estimate of realized ECE reduction from
-**delayed, action-gated** feedback (labels only from escalations and a fixed ~10%
-labeled monitoring subset). The policy is the exposé's online outcome estimator — a
-simple frequency estimate, deliberately not a learned/RL policy.
+A classifier under distribution shift does not always fail loudly. In the thesis work
+behind this PoC, a supervised ViT-B/16 on DermaMNIST drops from **80.9% to 5.3%
+accuracy** under shift while its expected calibration error rises from **0.014 to
+0.889**. Below chance on seven classes — not merely degraded, but systematically wrong,
+and still confident about it.
 
-## Architecture
+That is the dangerous case. A model that failed loudly could be caught by any threshold.
+This one fails silently, because **the signal you would normally monitor — the model's
+own confidence — is the signal that has been corrupted.** A static confidence threshold
+is blindest exactly when it matters most.
 
-```
-                     ┌──────────── OFFLINE (clean data) ────────────┐
- DermaMNIST train ─► │ train tiny ViT ─► frozen checkpoint          │
- DermaMNIST val ───► │ split-conformal: q_hat (95%) + drift ref     │
-                     └──────────────────────┬───────────────────────┘
-                                            ▼
- corrupted stream ──► ┌──────── SUPERVISOR (LangGraph, per batch) ────────┐
- (200×64; noise/blur/ │ SignalCollection ─► RiskAssessment ─► Policy      │
-  jitter in blocks)   │  drift, set size     bucket, gate     Decision    │
-                      │                                        │ ε-greedy │
-                      │        argmax_a  Q̂(a,bucket) − cost(a) ▼          │
-                      │ OutcomeLogging ◄──────────────────── Action       │
-                      │  JSONL trace;      ACCEPT | TTA(+recalibrate,     │
-                      │  gated labels ─►   then revert) | ABSTAIN |       │
-                      │  update memory     ESCALATE (returns labels)      │
-                      └───────────────┬───────────────────────────────────┘
-                    persistent outcome memory (conditions the next batch)
+## Why it is a decision problem
+
+Facing possible shift, the system has four actions, with steeply asymmetric costs:
+
+| Action | Cost | What it does |
+|---|---|---|
+| ACCEPT | 0.00 | ship the model's predictions |
+| TTA | 0.02 | adapt at test time (LayerNorm entropy), then revert |
+| ABSTAIN | 0.06 | withhold the whole batch |
+| ESCALATE | 0.15 | flag the batch for a human, who returns labels |
+
+```mermaid
+flowchart TB
+    A["ACCEPT — cost 0.00<br/>ship the model's predictions"]
+    T["TTA — cost 0.02<br/>adapt at test time, then revert"]
+    B["ABSTAIN — cost 0.06<br/>withhold the whole batch"]
+    E["ESCALATE — cost 0.15<br/>flag the batch for a human"]
+    A --> T --> B --> E
 ```
 
-No LLM calls anywhere — LangGraph is the state-machine substrate; nodes are plain Python.
+Costs are in ECE units; the ordering (free < cheap compute < lost throughput < human
+time) carries the argument, not the magnitudes. Down the ladder, throughput falls and
+oversight rises. A fixed rule picks one rung once. The supervisor re-picks every batch.
 
-## Reproduce (single command)
+## The supervisor
+
+On each batch, the supervisor reads three **label-free** signals:
+
+1. **Embedding drift** versus a clean-calibration reference.
+2. **Conformal prediction set size** under the frozen model.
+3. **Expected benefit minus cost**, estimated online from past outcomes.
+
+It then picks the action with the highest **estimated benefit − cost**. Benefit is a
+running, per-action, per-drift-bucket estimate of realized ECE reduction; selection is
+ε-greedy. Feedback is **delayed and action-gated** — labels arrive only from escalations
+and a fixed ~10% labeled monitoring subset, never from ordinary accepted batches. The
+policy is a simple frequency estimator, deliberately not a learned or RL policy.
+
+**No LLM calls anywhere.** LangGraph is only the state-machine substrate; every node is
+plain Python.
+
+```mermaid
+flowchart LR
+    CAL["Offline: split-conformal calibration<br/>q_hat 95% + drift reference"]
+    SC["SignalCollection<br/>drift, set size"]
+    RA["RiskAssessment<br/>drift bucket + accept gate"]
+    PD["PolicyDecision<br/>argmax of benefit - cost"]
+    AC["Action<br/>ACCEPT / TTA / ABSTAIN / ESCALATE"]
+    OL["OutcomeLogging<br/>gated, delayed labels"]
+    MEM[("outcome memory<br/>per action, per drift bucket")]
+    CAL --> SC
+    SC --> RA --> PD --> AC --> OL
+    OL -->|"update on gated labels"| MEM
+    MEM -->|"conditions next batch"| PD
+```
+
+## The experiment
+
+One stream (200 batches × 64, seed 0) runs through the supervisor and five comparators:
+
+| Comparator | Policy |
+|---|---|
+| Static classifier | raw frozen model, no conformal wrapper, never intervenes |
+| Never-TTA | conformal-wrapped, always accepts |
+| Always-TTA | adapts on every batch |
+| Fixed-threshold monitor | drift threshold, oracle-tuned on the eval stream (an upper bound for static rules) |
+| Contextual bandit | memoryless; same signals, same gated labels, no per-bucket memory |
+
+The metric is **net calibration benefit** = realized ECE reduction − intervention cost,
+computed identically for every method. Three questions:
+
+- **RQ1** — does the supervisor beat the best-tuned static policy?
+- **RQ2** — does bucketed outcome memory beat the memoryless bandit on the same signals?
+- **RQ3** — does adapt-then-recalibrate preserve 95% conformal coverage under TTA?
+
+## Results
+
+An honest null. The full table and readouts are in [RESULTS.md](RESULTS.md).
+
+| Method | Net calibration benefit |
+|---|---|
+| Static classifier | 0.0000 |
+| Never-TTA | 0.0000 |
+| Fixed-threshold monitor (oracle-tuned) | 0.0000 |
+| Contextual bandit (memoryless) | -0.0064 |
+| Supervisor (ours) | -0.0074 |
+| Always-TTA | -0.0263 |
+
+- **RQ1 — negative.** On this stream no intervention clears its cost bar: LayerNorm-entropy
+  TTA *worsens* calibration by sharpening confidence. So the oracle-tuned monitor collapses
+  to "never intervene" (0.0000), and the supervisor (-0.0074) cannot beat it.
+- **RQ2 — null, across 5 seeds.** Supervisor -0.0091 ± 0.0020 versus bandit
+  -0.0077 ± 0.0031; the sign of the gap flips across seeds (1 of 5 favor the supervisor).
+  A tie. Bucketed memory did not beat a stationary linear reward surface here.
+- **The one positive finding is the ablation.** Removing the outcome-estimator loop
+  (keeping only threshold logic) costs **+0.041 ± 0.009** net across the same 5 seeds.
+  Learned restraint is what the outcome memory buys — even when the best action is to do
+  nothing, knowing that is worth paying for.
+- **Gate finding.** A severity sweep confirms TTA *does* recover real accuracy under
+  gaussian noise (+2.1 to +2.7 points). But its best-case ECE gain (+0.0152) sits below
+  the TTA cost (0.02), so the calibration-based metric is **structurally blind** to that
+  recovery: a calibration-driven supervisor correctly declines an intervention that would
+  have improved accuracy. Which benefit to measure is itself the open question.
+
+## The result I am most confident in: the artifact catch
+
+An earlier configuration had the supervisor winning — **+0.0496** net versus +0.0028 for
+the then-monitor. A three-run audit traced that entire advantage to two evaluation
+artifacts, not to the supervisor:
+
+1. A **small-sample ECE noise floor** (≈0.11 at batch size 64) was being credited to the
+   withhold actions, paying every policy to abstain on well-calibrated batches.
+2. The **fixed-threshold monitor was denied the ABSTAIN action** — the very action the
+   first artifact made profitable — so the baseline was handicapped.
+
+Both were corrected. The supervisor's advantage went from **+0.0496 to -0.0074**: the
+apparent win was measurement error, and the honest number is the null above. A comparison
+that survives its own artifact audit is worth more than a win that does not.
+
+## What this means for the thesis
+
+- **Non-stationarity.** Episodic TTA reverts after every batch, so the reward surface is
+  effectively stationary — which removes the strongest reason to prefer a memoryful
+  controller over a bandit. Continual TTA, where adapted weights persist, is where memory
+  should begin to pay.
+- **Benefit definition.** The gate finding shows calibration-value and accuracy-value can
+  diverge. How to define intervention benefit when they do is an open question — not
+  something to settle by swapping the metric mid-experiment.
+- **Conformal under a changing score.** Adapt-then-recalibrate is a flagged simplification,
+  not a fix. Whether conformal validity survives a scoring function that drifts as the
+  model adapts is the open theoretical question the thesis names.
+
+## Reproduce
 
 ```bash
 uv sync
 uv run ars-reproduce
 ```
 
-Trains the ViT if no checkpoint exists (~3 min CPU), calibrates, streams 200 corrupted
-batches through **six methods** (static raw, never-TTA, always-TTA, oracle-tuned
-fixed-threshold monitor, memoryless contextual bandit, supervisor) plus ablations
-(three signal ablations, escalation-VoI bonus, recalibration on/off), writes per-batch
-decision traces to `runs/*.jsonl`, and generates [RESULTS.md](RESULTS.md).
-
-Everything is seeded (seed 0); the whole pipeline is CPU-only and finishes in minutes.
-Each run archives its decision traces (one JSONL per method + summary.json) to the
-committed `results/seed<seed>/` folder, so the submitted experiment's per-batch decisions
-are inspectable without re-running.
-
-## What the comparison shows
-
-One head-to-head table (accuracy, ECE, empirical coverage vs 95%, interventions,
-abstention rate, and **net calibration benefit** = realized ECE reduction minus fixed
-intervention cost) answering, per the exposé:
-
-- **RQ1** — does the multi-signal outcome-updating supervisor beat the best-tuned static
-  policy (and its strongest single-signal ablation)?
-- **RQ2** — does bucketed outcome memory beat a memoryless contextual bandit seeing the
-  same signals, same gated labels? (Escalation VoI bonus OFF in this headline.)
-- **RQ3** — does adapt-then-recalibrate preserve empirical conformal coverage under
-  episodic TTA?
-
-A null or negative result is a legitimate, reported answer — and that is what this run
-produced: on this stream no intervention clears its cost bar (LayerNorm-entropy TTA
-*worsens* calibration by sharpening confidence), so the oracle-tuned static monitor
-collapses to "never intervene" and the supervisor cannot beat it (RQ1 negative); the
-supervisor matches the memoryless bandit within single-seed noise (RQ2 null). The
-positive finding sits in the ablation: removing the outcome-estimator loop (keeping
-only threshold logic) costs −0.053 net — learned restraint is what the outcome memory
-buys. See [RESULTS.md](RESULTS.md) for the table and the full limitations list (single
-seed, counterfactual replay, batch-ECE floor debiasing, cost constants, etc.).
+Trains the ViT if no checkpoint exists (~3 min CPU), calibrates, then streams 200
+corrupted batches through the supervisor and five comparators, plus ablations (three
+signal ablations, escalation-VoI bonus, recalibration on/off). It writes per-batch
+decision traces to `runs/*.jsonl` and regenerates [RESULTS.md](RESULTS.md). Everything is
+seeded (seed 0) and CPU-only; the whole pipeline finishes in minutes. Each run archives
+its traces (one JSONL per method + `summary.json`) to the committed `results/seed<seed>/`
+folder, so the submitted experiment's per-batch decisions are inspectable without
+re-running.
 
 ## Repo map
 
 - `docs/` — planning documents (requirements, architecture, design, rules, phases,
-  decision log). `docs/design.md` specifies the policy precisely; `docs/memory.md`
-  logs every design decision with rejected alternatives.
+  decision log). `docs/design.md` specifies the policy precisely; `docs/memory.md` logs
+  every design decision, with rejected alternatives.
 - `src/ars/` — `policy.py` (outcome-estimator policy — the core), `graph.py` (LangGraph
-  nodes), `tta.py` (episodic LayerNorm-only TTA + adapt-then-recalibrate),
-  `conformal.py`, `signals.py`, `baselines.py`, `runner.py` (label-path-separated
-  harness), `report.py`, `reproduce.py`.
+  nodes), `tta.py` (episodic LayerNorm-only TTA + adapt-then-recalibrate), `conformal.py`,
+  `signals.py`, `baselines.py`, `runner.py` (label-path-separated harness), `report.py`,
+  `reproduce.py`.
