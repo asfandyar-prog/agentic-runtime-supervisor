@@ -1,6 +1,6 @@
 # agentic-runtime-supervisor
 
-**When should a deployed medical AI intervene, once it may no longer be trustworthy?**
+**My question is simple: a deployed medical AI drifts and starts making unreliable predictions. When should it intervene?**
 Today that decision is a fixed threshold, set once at deployment. This proof-of-concept
 tests whether it should be a learned decision instead — and reports, honestly, what
 happened when we measured it.
