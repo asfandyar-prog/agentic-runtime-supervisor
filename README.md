@@ -5,8 +5,9 @@ Today that decision is a fixed threshold, set once at deployment. This proof-of-
 tests whether it should be a learned decision instead — and reports, honestly, what
 happened when we measured it.
 
-Research exposé PoC, ETH Agentic Systems Lab application. DermaMNIST, one frozen ViT, a
-synthetic corruption stream. CPU-only, single command, fully archived.
+Research PoC. Phase 1: supervision under a stationary stream (complete). Phase 2:
+non-stationary shift (in progress). DermaMNIST, one frozen ViT, a synthetic corruption
+stream. CPU-only, single command, fully archived.
 
 ## The problem: confidently wrong
 
@@ -125,6 +126,21 @@ An honest null. The full table and readouts are in [RESULTS.md](RESULTS.md).
   recovery: a calibration-driven supervisor correctly declines an intervention that would
   have improved accuracy. Which benefit to measure is itself the open question.
 
+## Next: Phase 2, non-stationary shift
+
+- **Phase 1 finding.** On a stationary stream, never intervening was the best policy.
+  Every acting policy (supervisor, bandit, Always-TTA) came out net negative.
+- **Why this is expected.** Episodic TTA makes the reward surface stationary. Memory over
+  past interventions has nothing to learn from.
+- **Phase 2 stream.** Gradual, accumulating shift, such as progressive scanner or site
+  drift, instead of episodic batches.
+- **Phase 2 metric.** A benefit definition that also captures accuracy recovery. ECE alone
+  is structurally blind to what TTA recovers.
+- **Long-term goal.** Retrospective validation on real clinical data.
+- If your lab works on distribution shift, TTA, conformal prediction, or safe deployment
+  of medical AI, feel free to reach out:
+  [LinkedIn](https://www.linkedin.com/in/asfand-yar-3966b8291).
+
 ## The result I am most confident in: the artifact catch
 
 An earlier configuration had the supervisor winning — **+0.0496** net versus +0.0028 for
@@ -140,7 +156,7 @@ Both were corrected. The supervisor's advantage went from **+0.0496 to -0.0074**
 apparent win was measurement error, and the honest number is the null above. A comparison
 that survives its own artifact audit is worth more than a win that does not.
 
-## What this means for the thesis
+## What this means for the research agenda
 
 - **Non-stationarity.** Episodic TTA reverts after every batch, so the reward surface is
   effectively stationary — which removes the strongest reason to prefer a memoryful
@@ -151,7 +167,7 @@ that survives its own artifact audit is worth more than a win that does not.
   something to settle by swapping the metric mid-experiment.
 - **Conformal under a changing score.** Adapt-then-recalibrate is a flagged simplification,
   not a fix. Whether conformal validity survives a scoring function that drifts as the
-  model adapts is the open theoretical question the thesis names.
+  model adapts is the open theoretical question.
 
 ## Reproduce
 
@@ -166,7 +182,7 @@ signal ablations, escalation-VoI bonus, recalibration on/off). It writes per-bat
 decision traces to `runs/*.jsonl` and regenerates [RESULTS.md](RESULTS.md). Everything is
 seeded (seed 0) and CPU-only; the whole pipeline finishes in minutes. Each run archives
 its traces (one JSONL per method + `summary.json`) to the committed `results/seed<seed>/`
-folder, so the submitted experiment's per-batch decisions are inspectable without
+folder, so the Phase 1 experiment's per-batch decisions are inspectable without
 re-running.
 
 ## Repo map
