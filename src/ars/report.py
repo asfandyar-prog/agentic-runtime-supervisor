@@ -101,6 +101,33 @@ Across {n} seeds, {tie_txt} (supervisor {ms['supervisor']['mean']:+.4f} ± {ms['
                   f"ablation nets {ab['no_benefit']['mean']:+.4f} ± {ab['no_benefit']['std']:.4f}; removing the outcome loop costs "
                   f"{ab['removal_cost']['mean']:+.4f} ± {ab['removal_cost']['std']:.4f} net vs the full supervisor — the single-seed "
                   f"figure holds across seeds.")
+    # post hoc b2->ABSTAIN variant of the same ablation (D31), side by side with the spec
+    if abl_ms and os.path.exists("results/multiseed_no_benefit_abstain.json"):
+        with open("results/multiseed_no_benefit_abstain.json", encoding="utf-8") as f:
+            av = json.load(f)
+        rows_av = "\n".join(
+            f"| {r['seed']} | {r['specified_net']:+.4f} | {r['specified_removal_cost']:+.4f} "
+            f"| {r['abstain_variant_net']:+.4f} | {r['removal_cost']:+.4f} |" for r in av["per_seed"])
+        rc_av = av["removal_cost"]
+        clear = rc_av["mean"] - rc_av["std"] > 0
+        share = 1 - rc_av["mean"] / ab["removal_cost"]["mean"]
+        abl_ms += f"""
+
+**Post hoc variant (D31).** Without the estimator loop, ESCALATE is strictly dominated by
+ABSTAIN (same benefit, higher cost). So I also ran the fixed map with b2→ABSTAIN over the
+same {av['n_seeds']} seeds. The specified b2→ESCALATE variant is kept as pre-registered.
+
+| Seed | Specified (b2→ESCALATE) net | Gap vs supervisor | Variant (b2→ABSTAIN) net | Gap vs supervisor |
+|---|---|---|---|---|
+{rows_av}
+| **mean ± std** | **{ab['no_benefit']['mean']:+.4f} ± {ab['no_benefit']['std']:.4f}** | **{ab['removal_cost']['mean']:+.4f} ± {ab['removal_cost']['std']:.4f}** | **{av['abstain_variant']['mean']:+.4f} ± {av['abstain_variant']['std']:.4f}** | **{rc_av['mean']:+.4f} ± {rc_av['std']:.4f}** |
+
+""" + (f"With b2→ABSTAIN the gap stays clearly positive ({rc_av['mean']:+.4f} ± {rc_av['std']:.4f}). "
+       f"Removing the outcome loop still costs net benefit when the fixed rule uses the "
+       f"cheaper withhold action." if clear else
+       f"With b2→ABSTAIN the gap is {rc_av['mean']:+.4f} ± {rc_av['std']:.4f}, which is not clearly "
+       f"positive. About {share:.0%} of the specified gap comes from ESCALATE's cost, not from "
+       f"the outcome loop.")
 
     # cost-sensitivity crossovers (Day 3b, D30), rendered only if executed
     cost_md = ""

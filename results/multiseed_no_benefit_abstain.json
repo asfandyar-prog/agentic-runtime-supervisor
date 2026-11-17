@@ -1,0 +1,79 @@
+{
+ "n_seeds": 5,
+ "variant": "no-benefit fixed map with b2->ABSTAIN (post hoc, D31)",
+ "per_seed": [
+  {
+   "seed": 0,
+   "abstain_variant_net": -0.018721058142320477,
+   "supervisor_net": -0.0074209836675639615,
+   "removal_cost": 0.011300074474756516,
+   "specified_net": -0.060121058142320584,
+   "specified_removal_cost": 0.05270007447475662,
+   "actions": {
+    "n_tta": 53,
+    "n_escalate": 0,
+    "n_abstain": 92
+   }
+  },
+  {
+   "seed": 1,
+   "abstain_variant_net": -0.012460681487354332,
+   "supervisor_net": -0.009749424744432028,
+   "removal_cost": 0.002711256742922304,
+   "specified_net": -0.04936068148735444,
+   "specified_removal_cost": 0.03961125674292241,
+   "actions": {
+    "n_tta": 14,
+    "n_escalate": 0,
+    "n_abstain": 82
+   }
+  },
+  {
+   "seed": 2,
+   "abstain_variant_net": -0.01072593389491338,
+   "supervisor_net": -0.006523395212981651,
+   "removal_cost": 0.0042025386819317286,
+   "specified_net": -0.03502593389491336,
+   "specified_removal_cost": 0.02850253868193171,
+   "actions": {
+    "n_tta": 42,
+    "n_escalate": 0,
+    "n_abstain": 54
+   }
+  },
+  {
+   "seed": 3,
+   "abstain_variant_net": -0.010320668509691816,
+   "supervisor_net": -0.010385635559180359,
+   "removal_cost": -6.496704948854258e-05,
+   "specified_net": -0.04857066850969193,
+   "specified_removal_cost": 0.03818503295051157,
+   "actions": {
+    "n_tta": 53,
+    "n_escalate": 0,
+    "n_abstain": 85
+   }
+  },
+  {
+   "seed": 4,
+   "abstain_variant_net": -0.012887249269851915,
+   "supervisor_net": -0.011223108382925612,
+   "removal_cost": 0.001664140886926303,
+   "specified_net": -0.05473724926985204,
+   "specified_removal_cost": 0.04351414088692643,
+   "actions": {
+    "n_tta": 30,
+    "n_escalate": 0,
+    "n_abstain": 93
+   }
+  }
+ ],
+ "abstain_variant": {
+  "mean": -0.013023118260826383,
+  "std": 0.0033682935244863017
+ },
+ "removal_cost": {
+  "mean": 0.003962608747409661,
+  "std": 0.004386518346537466
+ }
+}

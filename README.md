@@ -116,10 +116,13 @@ An honest null. The full table and readouts are in [RESULTS.md](RESULTS.md).
 - **RQ2 — null, across 5 seeds.** Supervisor -0.0091 ± 0.0020 versus bandit
   -0.0077 ± 0.0031; the sign of the gap flips across seeds (1 of 5 favor the supervisor).
   A tie. Bucketed memory did not beat a stationary linear reward surface here.
-- **The one positive finding is the ablation.** Removing the outcome-estimator loop
-  (keeping only threshold logic) costs **+0.041 ± 0.009** net across the same 5 seeds.
-  Learned restraint is what the outcome memory buys — even when the best action is to do
-  nothing, knowing that is worth paying for.
+- **Ablation: the gap is mostly ESCALATE's cost.** Removing the outcome-estimator loop
+  leaves a fixed threshold map. As pre-registered (bucket 2 → ESCALATE), that costs
+  **+0.041 ± 0.009** net versus the supervisor across the same 5 seeds. But without the
+  loop, ESCALATE is strictly dominated by ABSTAIN (same benefit, higher cost). With
+  bucket 2 → ABSTAIN, a variant I added post hoc, the gap shrinks to **+0.004 ± 0.004**.
+  That is not clearly positive. About 90% of the specified gap comes from ESCALATE's
+  cost, not from the outcome memory.
 - **Gate finding.** A severity sweep confirms TTA *does* recover real accuracy under
   gaussian noise (+2.1 to +2.7 points). But its best-case ECE gain (+0.0152) sits below
   the TTA cost (0.02), so the calibration-based metric is **structurally blind** to that

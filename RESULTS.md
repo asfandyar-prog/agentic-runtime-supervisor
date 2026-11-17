@@ -80,6 +80,21 @@ Signal ablation: strongest reduced variant is "Supervisor, ablate drift signal"
 (net -0.0075); the supervisor and its strongest single-signal reduction are within noise of each other (+0.0001) — a null result, reportable as such.
 Across the same 5 seeds as the RQ2 robustness run, the no-benefit/cost ablation nets -0.0496 ± 0.0094; removing the outcome loop costs +0.0405 ± 0.0088 net vs the full supervisor — the single-seed figure holds across seeds.
 
+**Post hoc variant (D31).** Without the estimator loop, ESCALATE is strictly dominated by
+ABSTAIN (same benefit, higher cost). So I also ran the fixed map with b2→ABSTAIN over the
+same 5 seeds. The specified b2→ESCALATE variant is kept as pre-registered.
+
+| Seed | Specified (b2→ESCALATE) net | Gap vs supervisor | Variant (b2→ABSTAIN) net | Gap vs supervisor |
+|---|---|---|---|---|
+| 0 | -0.0601 | +0.0527 | -0.0187 | +0.0113 |
+| 1 | -0.0494 | +0.0396 | -0.0125 | +0.0027 |
+| 2 | -0.0350 | +0.0285 | -0.0107 | +0.0042 |
+| 3 | -0.0486 | +0.0382 | -0.0103 | -0.0001 |
+| 4 | -0.0547 | +0.0435 | -0.0129 | +0.0017 |
+| **mean ± std** | **-0.0496 ± 0.0094** | **+0.0405 ± 0.0088** | **-0.0130 ± 0.0034** | **+0.0040 ± 0.0044** |
+
+With b2→ABSTAIN the gap is +0.0040 ± 0.0044, which is not clearly positive. About 90% of the specified gap comes from ESCALATE's cost, not from the outcome loop.
+
 **RQ2 (memory vs memoryless, the headline test):** supervisor (escalation bonus OFF,
 so the only difference under test is bucketed outcome memory vs a stationary linear
 reward surface) nets -0.0074 vs bandit -0.0064: the supervisor and the memoryless bandit are within noise of each other (-0.0011) — a null result, reportable as such.

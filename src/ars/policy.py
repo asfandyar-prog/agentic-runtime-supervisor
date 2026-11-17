@@ -99,16 +99,22 @@ class Decision:
 class SupervisorPolicy:
     """Ablatable via flags: use_drift (bucket conditioning), use_setsize (ACCEPT gate),
     use_benefit (outcome memory; off collapses to the fixed threshold mapping),
-    escalation_bonus (VoI term, off in the RQ2 headline)."""
+    escalation_bonus (VoI term, off in the RQ2 headline). no_benefit_b2 sets the bucket-2
+    action of the no-benefit fixed map: ESCALATE is the pre-registered spec (design.md 9c);
+    ABSTAIN is the post hoc variant (memory.md D31), since without the estimator loop
+    ESCALATE is strictly dominated by ABSTAIN (same benefit, higher cost)."""
 
     def __init__(self, rng: np.random.Generator, use_drift: bool = True, use_setsize: bool = True,
-                 use_benefit: bool = True, escalation_bonus: bool = CFG.escalation_bonus):
+                 use_benefit: bool = True, escalation_bonus: bool = CFG.escalation_bonus,
+                 no_benefit_b2: str = "ESCALATE"):
+        assert no_benefit_b2 in ("ESCALATE", "ABSTAIN")
         self.rng = rng
         self.memory = OutcomeMemory()
         self.use_drift = use_drift
         self.use_setsize = use_setsize
         self.use_benefit = use_benefit
         self.escalation_bonus = escalation_bonus
+        self.no_benefit_b2 = no_benefit_b2
 
     def _bucket(self, raw_bucket: int) -> int:
         # no-drift ablation: estimator loses shift conditioning (single bucket)
@@ -122,7 +128,7 @@ class SupervisorPolicy:
         if not self.use_benefit:
             # no-benefit/cost ablation: memory off -> the policy collapses to exactly
             # the two-signal fixed rule (what removing the outcome loop leaves behind)
-            fixed = {0: "ACCEPT", 1: "TTA", 2: "ESCALATE"}[raw_bucket]
+            fixed = {0: "ACCEPT", 1: "TTA", 2: self.no_benefit_b2}[raw_bucket]
             if fixed == "ACCEPT" and gated:
                 fixed = "TTA"
             return Decision(fixed, False, {}, f"ablation no-benefit: fixed map bucket={raw_bucket}"
